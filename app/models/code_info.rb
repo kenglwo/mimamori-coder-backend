@@ -1,0 +1,2 @@
+class CodeInfo < ApplicationRecord
+end
