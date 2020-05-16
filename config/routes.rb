@@ -3,5 +3,6 @@ Rails.application.routes.draw do
 
   get 'api/student_view', to: 'student_view#index'
   get 'api/student_view/file_list', to: 'student_view#file_list'
+  get 'api/student_view/commit_log', to: 'student_view#commit_log'
   
 end
