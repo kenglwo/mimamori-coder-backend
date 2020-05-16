@@ -17,7 +17,7 @@ class StudentsTableController < ApplicationController
   
 
       json["workingFiles"]= []
-      working_file_names = `git -C ~/git/111  log -1 --name-only | sed -n 1,6\!p`.split("\n")
+      working_file_names = `git -C ~/git/#{student_id}  log -1 --name-only | sed -n 1,6\!p`.split("\n")
       for file_name in working_file_names do
         json_file = {}
         json_file["fileName"] = file_name
