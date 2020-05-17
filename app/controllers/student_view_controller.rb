@@ -71,12 +71,40 @@ class StudentViewController < ApplicationController
           json.push(commit_log)
           commit_log = {}
         end
-
-        
       end
     end
 
     render json: json
+  end
+
+  def code
+    student_id = params['student_id']
+    current_commit_index = params['current_commit_index']
+
+    commit_total_num = `git -C ~/git/#{student_id} log --oneline | wc -l`.strip()
+    head_hat_num = commit_total_num - current_commit_index
+    head = 'HEAD'
+    head_hat_num.times do
+      head += '^'
+    end
+
+    filenames = `git show --name-only #{head} | sed -n 1,6\!p`.split("\n")
+    commit_time_array = `git -C ~/git/#{student_id} log --oneline --pretty=format:'%cd' --date=format:'%Y/%m/%d %H:%M:%S'`.split("\n")
+
+    json = {}
+
+    # json = [
+    #   {
+    #     fileName: "ok.html",
+    #     commitTime: "2020-05-16 13:28",
+    #     codeString: "",
+    #     codeStatus: "ok"
+    #   }
+    # ]
+
+    # render json: json
+    render plain: filenames
+
   end
 
 end
