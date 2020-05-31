@@ -131,20 +131,24 @@ class StudentViewController < ApplicationController
 
     commit_total_num = `git -C ~/git/#{student_id} log --oneline | wc -l`.strip
     head_hat_num = commit_total_num.to_i - current_commit_index.to_i
+
+    logger.debug head_hat_num
+
     head = 'HEAD'
     head_hat_num.times do
       head += '^'
     end
 
     filename_array = `git -C ~/git/#{student_id} show --name-only #{head} | sed -n 1,6\!p`.split("\n")
-
     code_string_array = []
     filename_array.each do |filename|
-      code_string = `git -C ~/git/#{student_id} show #{head}:#{filename}`.strip
-      json = {
-        codeString: code_string
-      }
-      code_string_array.push(json)
+      if filename.end_with?("html", "css", "js")
+        code_string = `git -C ~/git/#{student_id} show #{head}:#{filename}`.strip
+        json = {
+          codeString: code_string
+        }
+        code_string_array.push(json)
+      end
     end
 
     render json: code_string_array
