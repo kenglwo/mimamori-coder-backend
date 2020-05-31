@@ -39,4 +39,8 @@ class StudentsTableController < ApplicationController
 
     render json: all_student_table_items
   end
+
+  def test
+    render plain: "API connected!"
+  end
 end
