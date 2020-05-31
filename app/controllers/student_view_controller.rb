@@ -44,11 +44,14 @@ class StudentViewController < ApplicationController
     commit_last_index = commit_time_array.length - 1
 
     commit_log_info = `git -C ~/git/#{student_id} log --name-status`
+    commit_log_info_lines =  `git -C ~/git/#{student_id} log --name-status | wc -l`.strip().to_i
 
     commit_index = -1
     commit_log = {}
 
-    commit_log_info.each_line do |line|
+    commit_log_info.each_line.with_index do |line, index|
+      linenum = index + 1
+
       if line.index('commit') == 0
         if commit_log != {}
           json.push(commit_log)
@@ -68,9 +71,10 @@ class StudentViewController < ApplicationController
         fileName: file_info[1].strip,
         fileStatus: file_info[0]
       }
+
       commit_log['commitFile'].push(commit_file)
 
-      if commit_index == commit_last_index
+      if commit_index == commit_last_index && linenum == commit_log_info_lines
         json.push(commit_log)
         commit_log = {}
       end
