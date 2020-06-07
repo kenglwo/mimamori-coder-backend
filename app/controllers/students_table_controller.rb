@@ -1,3 +1,5 @@
+require 'open3'
+
 class StudentsTableController < ApplicationController
 
   ALL_STUDENT_ID = "ls -1 ~/git"
@@ -14,40 +16,45 @@ class StudentsTableController < ApplicationController
   
 
       json["workingFiles"]= []
+      working_file_names = []
 
-      logger.debug i
-      logger.debug student_id
 
-      begin
-        working_file_names = `git -C ~/git/#{student_id}  log -1 --name-only | sed -n 1,6\!p`.split("\n")
-      rescue
+      cmd = "git -C ~/git/#{student_id}  log -1 --name-only | sed -n 1,6\!p"
+
+      out, err, status = Open3.capture3(cmd)
+      if not err.include?("fatal")
+        working_file_names = out.split("\n")
+      else
         working_file_names = ["unkown"]
-        logger.debug i
-        logger.debug student_id
       end
+
 
       for file_name in working_file_names do
         json_file = {}
         json_file["fileName"] = file_name
 
-        begin
-          json_file["commitIndex"] = `git -C ~/git/#{student_id} log --oneline | wc -l`.strip()
-        rescue => e
-          json_fie["commitIndex"] = "unkown"
+        cmd = "git -C ~/git/#{student_id} log --oneline | wc -l"
+        out, err, status = Open3.capture3(cmd)
+        if not err.include?("fatal")
+          json_file["commitIndex"] = out.strip()
+        else
+          json_file["commitIndex"] = "unkown"
         end
 
-        begin
-          json_file["updatedTime"] = `git -C ~/git/#{student_id} log --oneline --pretty=format:'%cd' --date=format:'%Y/%m/%d %H:%M:%S' | head -1`.strip()
-        rescue => e
+        cmd = "git -C ~/git/#{student_id} log --oneline --pretty=format:'%cd' --date=format:'%Y/%m/%d %H:%M:%S' | head -1"
+        out, err, status = Open3.capture3(cmd)
+        if not err.include?("fatal")
+          json_file["updatedTime"] = out.strip()
+        else
           json_file["updatedTime"] = 'unkown'
         end
+        
+        # # TODO: check code status with linter
+        # # code = `git -C ~/git/#{student_id} show HEAD:#{file_name}`.strip()
+        # # json_file["codeStatus"] = "unknown"
+        # json_file["warningNum"] = 0
+        # json_file["errorNum"] = 0
 
-        # TODO: check code status with linter
-        # code = `git -C ~/git/#{student_id} show HEAD:#{file_name}`.strip()
-        json_file["codeStatus"] = "unknown"
-
-        json_file["warningNum"] = 0
-        json_file["errorNum"] = 0
         json["workingFiles"].push(json_file)
       end
 
