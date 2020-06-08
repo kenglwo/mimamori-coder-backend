@@ -29,3 +29,5 @@
 /test/
 vendor/
 /db/
+
+.env*
