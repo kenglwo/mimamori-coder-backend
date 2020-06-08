@@ -44,7 +44,7 @@ class StudentViewController < ApplicationController
     commit_last_index = commit_time_array.length - 1
 
     commit_log_info = `git -C ~/git/#{student_id} log --name-status`
-    commit_log_info_lines =  `git -C ~/git/#{student_id} log --name-status | wc -l`.strip().to_i
+    commit_log_info_lines = `git -C ~/git/#{student_id} log --name-status | wc -l`.strip.to_i
 
     commit_index = -1
     commit_log = {}
@@ -100,7 +100,7 @@ class StudentViewController < ApplicationController
 
     code_string_array = []
     filename_array.each do |filename|
-      if filename.end_with?("html", "css", "js")
+      if filename.end_with?('html', 'css', 'js')
         code_string = `git -C ~/git/#{student_id} show #{head}:#{filename}`.strip
         code_string_array.push(code_string)
       end
@@ -115,15 +115,15 @@ class StudentViewController < ApplicationController
     json = []
 
     filename_array.each_with_index do |filename, i|
-      if filename.end_with?("html", "css", "js")
-        code_info = {
-          fileName: filename,
-          commitTime: commit_time,
-          codeString: code_string_array[i],
-          codeStatus: code_status_array[i]
-        }
-        json.push(code_info)
-      end
+      next unless filename.end_with?('html', 'css', 'js')
+
+      code_info = {
+        fileName: filename,
+        commitTime: commit_time,
+        codeString: code_string_array[i],
+        codeStatus: code_status_array[i]
+      }
+      json.push(code_info)
     end
 
     render json: json
@@ -144,13 +144,13 @@ class StudentViewController < ApplicationController
     filename_array = `git -C ~/git/#{student_id} show --name-only #{head} | sed -n 1,6\!p`.split("\n")
     code_string_array = []
     filename_array.each do |filename|
-      if filename.end_with?("html", "css", "js")
-        code_string = `git -C ~/git/#{student_id} show #{head}:#{filename}`.strip
-        json = {
-          codeString: code_string
-        }
-        code_string_array.push(json)
-      end
+      next unless filename.end_with?('html', 'css', 'js')
+
+      code_string = `git -C ~/git/#{student_id} show "#{head}:#{filename}"`.strip
+      json = {
+        codeString: code_string
+      }
+      code_string_array.push(json)
     end
 
     render json: code_string_array
