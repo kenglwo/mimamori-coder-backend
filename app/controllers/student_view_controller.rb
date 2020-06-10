@@ -3,7 +3,8 @@
 class StudentViewController < ApplicationController
   def index
     student_id = params['student_id']
-    commit_total_num = `git -C ~/git/#{student_id} log --oneline | wc -l`.strip
+    cmd = "git -C ~/git/#{student_id} log --oneline | wc -l"
+    commit_total_num = `#{cmd}`.strip
 
     render json: {
       commitTotalNum: commit_total_num,
@@ -44,11 +45,14 @@ class StudentViewController < ApplicationController
     commit_last_index = commit_time_array.length - 1
 
     commit_log_info = `git -C ~/git/#{student_id} log --name-status`
+    commit_log_info_lines = `git -C ~/git/#{student_id} log --name-status | wc -l`.strip.to_i
 
     commit_index = -1
     commit_log = {}
 
-    commit_log_info.each_line do |line|
+    commit_log_info.each_line.with_index do |line, index|
+      linenum = index + 1
+
       if line.index('commit') == 0
         if commit_log != {}
           json.push(commit_log)
@@ -68,9 +72,10 @@ class StudentViewController < ApplicationController
         fileName: file_info[1].strip,
         fileStatus: file_info[0]
       }
+
       commit_log['commitFile'].push(commit_file)
 
-      if commit_index == commit_last_index
+      if commit_index == commit_last_index && linenum == commit_log_info_lines
         json.push(commit_log)
         commit_log = {}
       end
@@ -96,8 +101,10 @@ class StudentViewController < ApplicationController
 
     code_string_array = []
     filename_array.each do |filename|
-      code_string = `git -C ~/git/#{student_id} show #{head}:#{filename}`.strip
-      code_string_array.push(code_string)
+      if filename.end_with?('html', 'css', 'js')
+        code_string = `git -C ~/git/#{student_id} show #{head}:#{filename}`.strip
+        code_string_array.push(code_string)
+      end
     end
 
     code_status_array = []
@@ -109,6 +116,8 @@ class StudentViewController < ApplicationController
     json = []
 
     filename_array.each_with_index do |filename, i|
+      next unless filename.end_with?('html', 'css', 'js')
+
       code_info = {
         fileName: filename,
         commitTime: commit_time,
@@ -127,16 +136,18 @@ class StudentViewController < ApplicationController
 
     commit_total_num = `git -C ~/git/#{student_id} log --oneline | wc -l`.strip
     head_hat_num = commit_total_num.to_i - current_commit_index.to_i
+
     head = 'HEAD'
     head_hat_num.times do
       head += '^'
     end
 
     filename_array = `git -C ~/git/#{student_id} show --name-only #{head} | sed -n 1,6\!p`.split("\n")
-
     code_string_array = []
     filename_array.each do |filename|
-      code_string = `git -C ~/git/#{student_id} show #{head}:#{filename}`.strip
+      next unless filename.end_with?('html', 'css', 'js')
+
+      code_string = `git -C ~/git/#{student_id} show "#{head}:#{filename}"`.strip
       json = {
         codeString: code_string
       }

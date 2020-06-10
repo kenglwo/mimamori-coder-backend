@@ -27,7 +27,7 @@
 /config/master.key
 
 /test/
-/vendor/
+vendor/
 /db/
 
 .env*
