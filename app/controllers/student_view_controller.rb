@@ -3,7 +3,8 @@
 class StudentViewController < ApplicationController
   def index
     student_id = params['student_id']
-    commit_total_num = `git -C ~/git/#{student_id} log --oneline | wc -l`.strip
+    cmd = "git -C ~/git/#{student_id} log --oneline | wc -l"
+    commit_total_num = `#{cmd}`.strip
 
     render json: {
       commitTotalNum: commit_total_num,
