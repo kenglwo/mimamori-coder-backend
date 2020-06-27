@@ -31,6 +31,7 @@ class StudentViewController < ApplicationController
     file_name_list = `git -C ~/git/#{student_id} ls-files`.split("\n")
 
     file_name_list.each do |file_name|
+      file_name = file_name.encode('UTF-8')
       json['fileNameList'].push(file_name)
     end
 
@@ -94,17 +95,23 @@ class StudentViewController < ApplicationController
     head_hat_num.times do
       head += '^'
     end
+    # TODO: set prevHead properly
+    prevHead = "#{head}^"
 
     filename_array = `git -C ~/git/#{student_id} show --name-only #{head} | sed -n 1,6\!p`.split("\n")
 
     commit_time = `git -C ~/git/#{student_id} show #{head} --pretty=format:'%cd' --date=format:'%Y/%m/%d %H:%M:%S' | head -1`.strip
 
     code_string_array = []
+    code_diff_array = []
+
     filename_array.each do |filename|
-      if filename.end_with?('html', 'css', 'js')
-        code_string = `git -C ~/git/#{student_id} show #{head}:#{filename}`.strip
-        code_string_array.push(code_string)
-      end
+      next unless filename.end_with?('html', 'css', 'js')
+
+      code_string = `git -C ~/git/#{student_id} show #{head}:#{filename}`.strip
+      code_string_array.push(code_string)
+      code_diff = `git -C ~/git/#{student_id} diff #{prevHead}:#{filename} #{head}:#{filename}`.strip
+      code_diff_array.push(code_diff)
     end
 
     code_status_array = []
@@ -122,10 +129,13 @@ class StudentViewController < ApplicationController
         fileName: filename,
         commitTime: commit_time,
         codeString: code_string_array[i],
+        codeDiff: code_diff_array[i],
         codeStatus: code_status_array[i]
       }
       json.push(code_info)
     end
+
+    logger.debug(json)
 
     render json: json
   end
