@@ -23,7 +23,7 @@ class StudentsTableController < ApplicationController
       working_file_names = if !err.include?('fatal')
                              out.split("\n")
                            else
-                             ['unkown']
+                             ['unknown']
                            end
 
       working_file_names.each do |file_name|
@@ -34,7 +34,7 @@ class StudentsTableController < ApplicationController
         json_file['commitIndex'] = if !err.include?('fatal')
                                      out.strip
                                    else
-                                     'unkown'
+                                     'unknown'
                                    end
 
         cmd = "git -C ~/git/#{student_id} log --oneline --pretty=format:'%cd' --date=format:'%Y/%m/%d %H:%M:%S' | head -1"
@@ -42,7 +42,7 @@ class StudentsTableController < ApplicationController
         json_file['updatedTime'] = if !err.include?('fatal')
                                      out.strip
                                    else
-                                     'unkown'
+                                     'unknown'
                                    end
 
         # # TODO: check code status with linter
