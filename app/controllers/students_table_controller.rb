@@ -28,7 +28,7 @@ class StudentsTableController < ApplicationController
 
       working_file_names.each do |file_name|
         json_file = {}
-        json_file['fileName'] = file_name
+        json_file['fileName'] = file_name.encode("UTF-8")
         cmd = "git -C ~/git/#{student_id} log --oneline | wc -l"
         out, err, status = Open3.capture3(cmd)
         json_file['commitIndex'] = if !err.include?('fatal')
@@ -58,9 +58,5 @@ class StudentsTableController < ApplicationController
     end
 
     render json: all_student_table_items
-  end
-
-  def test
-    render plain: 'API connected!'
   end
 end

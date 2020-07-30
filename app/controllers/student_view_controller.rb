@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+require 'nkf'
 
 class StudentViewController < ApplicationController
   def index
@@ -155,13 +156,16 @@ class StudentViewController < ApplicationController
     filename_array = `git -C ~/git/#{student_id} show --name-only #{head} | sed -n 1,6\!p`.split("\n")
     code_string_array = []
     filename_array.each do |filename|
-      next unless filename.end_with?('html', 'css', 'js')
+      if filename.end_with?('html', 'css', 'js')
+        code_string = `git -C ~/git/#{student_id} show "#{head}:#{filename}"`.strip
+        json = {
+          codeString: code_string
+        }
+        code_string_array.push(json)
+      elsif filename.downcase.end_with?('png', 'jpeg', 'jpg', 'gif')
+        # generate image file and save it in the student's folder
+      end
 
-      code_string = `git -C ~/git/#{student_id} show "#{head}:#{filename}"`.strip
-      json = {
-        codeString: code_string
-      }
-      code_string_array.push(json)
     end
 
     render json: code_string_array
