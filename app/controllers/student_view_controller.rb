@@ -37,12 +37,10 @@ class StudentViewController < ApplicationController
       json['fileNameList'].push(file_name)
 
       if file_name.downcase.end_with?('png', 'jpeg', 'jpg', 'gif')
-				# image_dir_path = File.join(Rails.root.to_s, 'public', , 'images')
 				image_dir_path =  "#{Rails.root.to_s}/public/images/#{student_id}"
 				Dir.mkdir(image_dir_path) unless Dir.exist?(image_dir_path)
 				file_name_base = File.basename(file_name)
-        # generate image file and save it in the student's folder
-				`git -C ~/git/#{student_id} show "master:#{file_name}" > #{image_dir_path}/#{file_name_base}`
+				`git -C ~/git/#{student_id} show "master:#{file_name}" > #{image_dir_path}/#{file_name_base}` unless File.exist?("#{image_dir_path}/#{file_name_base}")
 			end
     end
 
