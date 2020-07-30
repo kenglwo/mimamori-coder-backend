@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 require 'nkf'
+require 'nokogiri'
 
 class StudentViewController < ApplicationController
   def index
@@ -34,6 +35,15 @@ class StudentViewController < ApplicationController
     file_name_list.each do |file_name|
       file_name = file_name.encode('UTF-8')
       json['fileNameList'].push(file_name)
+
+      if file_name.downcase.end_with?('png', 'jpeg', 'jpg', 'gif')
+				# image_dir_path = File.join(Rails.root.to_s, 'public', , 'images')
+				image_dir_path =  "#{Rails.root.to_s}/public/images/#{student_id}"
+				Dir.mkdir(image_dir_path) unless Dir.exist?(image_dir_path)
+				file_name_base = File.basename(file_name)
+        # generate image file and save it in the student's folder
+				`git -C ~/git/#{student_id} show "master:#{file_name}" > #{image_dir_path}/#{file_name_base}`
+			end
     end
 
     render json: json
@@ -136,8 +146,6 @@ class StudentViewController < ApplicationController
       json.push(code_info)
     end
 
-    logger.debug(json)
-
     render json: json
   end
 
@@ -158,15 +166,32 @@ class StudentViewController < ApplicationController
     filename_array.each do |filename|
       if filename.end_with?('html', 'css', 'js')
         code_string = `git -C ~/git/#{student_id} show "#{head}:#{filename}"`.strip
-        json = {
-          codeString: code_string
-        }
-        code_string_array.push(json)
-      elsif filename.downcase.end_with?('png', 'jpeg', 'jpg', 'gif')
-        # generate image file and save it in the student's folder
-      end
+				parsed_code_string = ''
 
+				if filename.end_with?('html')
+					parsed_code_string = Nokogiri::HTML.parse(code_string)
+					parsed_code_string.css("img").each do |e|
+						image_filename = e[:src]
+						unless image_filename.start_with?('http')
+							image_path = "#{ENV['APP_URL']}/images/#{student_id}/#{image_filename}"
+							e[:src] = image_path
+						end
+					end
+
+					json = {
+						codeString: parsed_code_string.to_html
+					}
+					code_string_array.push(json)
+				else
+					json = {
+						codeString: code_string
+					}
+					code_string_array.push(json)
+				end
+      end
     end
+
+		logger.debug code_string_array
 
     render json: code_string_array
   end
