@@ -31,3 +31,4 @@ vendor/
 /db/
 
 .env*
+public/images/*
