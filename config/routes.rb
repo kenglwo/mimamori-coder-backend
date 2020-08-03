@@ -9,4 +9,5 @@ Rails.application.routes.draw do
   get 'api/student_view/commit_log', to: 'student_view#commit_log'
   get 'api/student_view/code', to: 'student_view#code'
   get 'api/student_view/code_string', to: 'student_view#code_string'
+  get 'api/student_view/student_id_list', to: 'student_view#student_id_list'
 end

@@ -189,8 +189,13 @@ class StudentViewController < ApplicationController
       end
     end
 
-		logger.debug code_string_array
-
     render json: code_string_array
   end
+
+	def student_id_list
+
+    api_result = `ls -1 ~/git`.split("\n")
+
+		render json: api_result
+	end
 end
