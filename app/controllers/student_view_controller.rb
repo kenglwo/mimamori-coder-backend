@@ -175,6 +175,13 @@ class StudentViewController < ApplicationController
 							e[:src] = image_path
 						end
 					end
+					parsed_code_string.css("talbe").each do |e|
+						image_filename = e[:background]
+						unless image_filename.start_with?('http')
+							image_path = "#{ENV['APP_URL']}/images/#{student_id}/#{image_filename}"
+							e[:background] = image_path
+						end
+					end
 
 					json = {
 						codeString: parsed_code_string.to_html
