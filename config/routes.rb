@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 Rails.application.routes.draw do
-  get 'api/test', to: 'students_table#test'
+  post 'api/login_student', to: 'login#login_student'
   get 'api/students_table_items', to: 'students_table#index'
 
   get 'api/student_view', to: 'student_view#index'

@@ -5,6 +5,7 @@ require 'open3'
 class StudentsTableController < ApplicationController
   ALL_STUDENT_ID = 'ls -1 ~/git'
 
+
   def index
     all_student_table_items = []
 
@@ -59,4 +60,5 @@ class StudentsTableController < ApplicationController
 
     render json: all_student_table_items
   end
+
 end
