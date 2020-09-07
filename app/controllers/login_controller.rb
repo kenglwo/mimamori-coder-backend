@@ -1,19 +1,20 @@
 class LoginController < ApplicationController
   def login_student
-    #TODO: fetch class info from DB
-    class_info = {"pe2020" => "xxxx"}
-    # login_status = {"success" => 0, "class_code_error": 1, "class_password_error": 2}
     msg = ""
 
-    auth_info = params[:students_table]
+    auth_info = params[:login]
     student_id = auth_info["studentId"]
     class_code = auth_info["classCode"]
     class_password = auth_info["classPassword"]
 
-    if(class_info[class_code] == class_password)    
-      msg = "Connection Establised!"
-    else 
-      msg = "Error"
+    class_info = ClassInfo.find_by(class_code: class_code)
+
+    if class_info.nil?
+      msg = "Invalid Class Code"
+    else
+      logger.debug class_info.class_password
+      logger.debug class_password
+      msg = class_info['class_password'] == class_password ? "Success" : "Invalid Class Password"
     end
 
     render plain: msg
