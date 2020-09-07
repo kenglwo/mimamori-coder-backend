@@ -1,0 +1,2 @@
+class StudentCodeDatum < ApplicationRecord
+end
