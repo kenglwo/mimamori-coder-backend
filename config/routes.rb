@@ -2,6 +2,7 @@
 
 Rails.application.routes.draw do
   post 'api/login_student', to: 'login#login_student'
+  post 'api/save_code', to: 'student_code#code'
   get 'api/students_table_items', to: 'students_table#index'
 
   get 'api/student_view', to: 'student_view#index'
