@@ -12,8 +12,6 @@ class LoginController < ApplicationController
     if class_info.nil?
       msg = "Invalid Class Code"
     else
-      logger.debug class_info.class_password
-      logger.debug class_password
       msg = class_info['class_password'] == class_password ? "Success" : "Invalid Class Password"
     end
 
