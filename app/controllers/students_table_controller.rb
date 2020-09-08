@@ -9,54 +9,48 @@ class StudentsTableController < ApplicationController
   def index
     all_student_table_items = []
 
-    all_student_id = `#{ALL_STUDENT_ID}`.split("\n")
-    all_student_num = all_student_id.length
+      query = <<-EOF
+        select 
+          student_id
+          , filename
+          , code
+          , created_at
+          , commits
+        from (
+          select
+            student_id
+            , filename
+            , code
+            , created_at 
+            , ROW_NUMBER() over (partition by student_id order by created_at asc) as commits
+            , ROW_NUMBER() over (partition by student_id order by created_at desc) as num 
+          from student_code_infos 
+          order by student_id, commits desc
+        ) as tmp 
+        where num = 1;
+      EOF
 
-    all_student_id.each_with_index do |student_id, _i|
-      json = {}
-      json['studentID'] = student_id
-      json['workingFiles'] = []
-      working_file_names = []
+      student_infos = StudentCodeInfo.find_by_sql(query)
+      logger.debug "##########################"
+      student_infos.each do |student_info|
+        json = {}
+        json['studentID'] = student_info['student_id']
 
-      cmd = "git -C ~/git/#{student_id}  log -1 --name-only | sed -n 1,6\!p"
-
-      out, err, status = Open3.capture3(cmd)
-      working_file_names = if !err.include?('fatal')
-                             out.split("\n")
-                           else
-                             ['unknown']
-                           end
-
-      working_file_names.each do |file_name|
+        json['workingFiles'] = []
         json_file = {}
-        json_file['fileName'] = file_name.encode("UTF-8")
-        cmd = "git -C ~/git/#{student_id} log --oneline | wc -l"
-        out, err, status = Open3.capture3(cmd)
-        json_file['commitIndex'] = if !err.include?('fatal')
-                                     out.strip
-                                   else
-                                     'unknown'
-                                   end
-
-        cmd = "git -C ~/git/#{student_id} log --oneline --pretty=format:'%cd' --date=format:'%Y/%m/%d %H:%M:%S' | head -1"
-        out, err, status = Open3.capture3(cmd)
-        json_file['updatedTime'] = if !err.include?('fatal')
-                                     out.strip
-                                   else
-                                     'unknown'
-                                   end
-
-        # # TODO: check code status with linter
-        # code = `git -C ~/git/#{student_id} show HEAD:#{file_name}`.strip
-        # json_file['codeStatus'] = 'unknown'
-        # json_file['warningNum'] = 0
-        # json_file['errorNum'] = 0
-
+        json_file['fileName'] = student_info['filename']
+        json_file['commitIndex'] = student_info['commits']
+        json_file['updatedTime'] = student_info['created_at']
         json['workingFiles'].push(json_file)
+
+        all_student_table_items.push(json)
       end
 
-      all_student_table_items.push(json)
-    end
+      # # TODO: check code status with linter
+      # code = `git -C ~/git/#{student_id} show HEAD:#{file_name}`.strip
+      # json_file['codeStatus'] = 'unknown'
+      # json_file['warningNum'] = 0
+      # json_file['errorNum'] = 0
 
     render json: all_student_table_items
   end
