@@ -1,17 +1,37 @@
 # frozen_string_literal: true
+
 require 'nkf'
 require 'nokogiri'
 
 class StudentViewController < ApplicationController
   def index
     student_id = params['student_id']
-    cmd = "git -C ~/git/#{student_id} log --oneline | wc -l"
-    commit_total_num = `#{cmd}`.strip
+    api_result = { commitTotalNum: 0, currentCommitIndex: 0 }
+    # cmd = "git -C ~/git/#{student_id} log --oneline | wc -l"
+    # commit_total_num = `#{cmd}`.strip
 
-    render json: {
-      commitTotalNum: commit_total_num,
-      currentCommitIndex: commit_total_num
-    }
+    query = <<-EOF
+      select 
+        commits 
+      from (
+        select 
+          student_id
+          , filename
+          , code
+          , created_at
+          , ROW_NUMBER() over (partition by student_id order by created_at asc) as commits
+          , ROW_NUMBER() over (partition by student_id order by created_at desc) as num 
+        from student_code_infos 
+        order by student_id, commits desc
+      ) as tmp 
+      where student_id = :student_id and num = 1;
+    EOF
+    res = StudentCodeInfo.find_by_sql([query, { student_id: student_id }])[0]
+    commits = res['commits']
+
+    api_result = { commitTotalNum: commits, currentCommitIndex: commits }
+
+    render json: api_result
     # render json: {
     #   commitTotalNum: commit_total_num,
     #   currentCommitIndex: commit_total_num,
@@ -36,12 +56,14 @@ class StudentViewController < ApplicationController
       file_name = file_name.encode('UTF-8')
       json['fileNameList'].push(file_name)
 
-      if file_name.downcase.end_with?('png', 'jpeg', 'jpg', 'gif')
-				image_dir_path =  "#{Rails.root.to_s}/public/images/#{student_id}"
-				Dir.mkdir(image_dir_path) unless Dir.exist?(image_dir_path)
-				file_name_base = File.basename(file_name)
-				`git -C ~/git/#{student_id} show "master:#{file_name}" > #{image_dir_path}/#{file_name_base}` unless File.exist?("#{image_dir_path}/#{file_name_base}")
-			end
+      next unless file_name.downcase.end_with?('png', 'jpeg', 'jpg', 'gif')
+
+      image_dir_path = "#{Rails.root}/public/images/#{student_id}"
+      Dir.mkdir(image_dir_path) unless Dir.exist?(image_dir_path)
+      file_name_base = File.basename(file_name)
+      unless File.exist?("#{image_dir_path}/#{file_name_base}")
+        `git -C ~/git/#{student_id} show "master:#{file_name}" > #{image_dir_path}/#{file_name_base}`
+  end
     end
 
     render json: json
@@ -162,50 +184,49 @@ class StudentViewController < ApplicationController
     filename_array = `git -C ~/git/#{student_id} show --name-only #{head} | sed -n 1,6\!p`.split("\n")
     code_string_array = []
     filename_array.each do |filename|
-      if filename.end_with?('html', 'css', 'js')
-        code_string = `git -C ~/git/#{student_id} show "#{head}:#{filename}"`.strip
-				parsed_code_string = ''
+      next unless filename.end_with?('html', 'css', 'js')
 
-				if filename.end_with?('html')
-					parsed_code_string = Nokogiri::HTML.parse(code_string)
-					parsed_code_string.css("img").each do |e|
-						image_filename = e[:src]
-						unless image_filename.start_with?('http')
-							image_path = "#{ENV['APP_URL']}/images/#{student_id}/#{image_filename}"
-							e[:src] = image_path
-						end
-					end
+      code_string = `git -C ~/git/#{student_id} show "#{head}:#{filename}"`.strip
+      parsed_code_string = ''
 
-					parsed_code_string.css("table").each do |e|
-						if e[:background].present?
-							image_filename = e[:background]
-							unless image_filename.start_with?('http')
-								image_path = "#{ENV['APP_URL']}/images/#{student_id}/#{image_filename}"
-								e[:background] = image_path
-							end
-						end
-					end
+      if filename.end_with?('html')
+        parsed_code_string = Nokogiri::HTML.parse(code_string)
+        parsed_code_string.css('img').each do |e|
+          image_filename = e[:src]
+          unless image_filename.start_with?('http')
+            image_path = "#{ENV['APP_URL']}/images/#{student_id}/#{image_filename}"
+            e[:src] = image_path
+          end
+        end
 
-					json = {
-						codeString: parsed_code_string.to_html
-					}
-					code_string_array.push(json)
-				else
-					json = {
-						codeString: code_string
-					}
-					code_string_array.push(json)
-				end
+        parsed_code_string.css('table').each do |e|
+          next unless e[:background].present?
+
+          image_filename = e[:background]
+          unless image_filename.start_with?('http')
+            image_path = "#{ENV['APP_URL']}/images/#{student_id}/#{image_filename}"
+            e[:background] = image_path
+          end
+        end
+
+        json = {
+          codeString: parsed_code_string.to_html
+        }
+        code_string_array.push(json)
+      else
+        json = {
+          codeString: code_string
+        }
+        code_string_array.push(json)
       end
     end
 
     render json: code_string_array
   end
 
-	def student_id_list
-
+  def student_id_list
     api_result = `ls -1 ~/git`.split("\n")
 
-		render json: api_result
-	end
+    render json: api_result
+  end
 end
