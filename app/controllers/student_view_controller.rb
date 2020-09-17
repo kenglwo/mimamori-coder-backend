@@ -32,38 +32,30 @@ class StudentViewController < ApplicationController
     api_result = { commitTotalNum: commits, currentCommitIndex: commits }
 
     render json: api_result
-    # render json: {
-    #   commitTotalNum: commit_total_num,
-    #   currentCommitIndex: commit_total_num,
-    #   files: [{
-    #     fileName: "",
-    #     commitIndex: 0,
-    #     updatedTime: "2020-05-13 17:52",
-    #     codeStatus: "ok",
-    #     warningNum: 0,
-    #     errorNum: 0
-    #   }]
-    # }
   end
 
   def file_list
     student_id = params['student_id']
     json = {}
     json['fileNameList'] = []
-    file_name_list = `git -C ~/git/#{student_id} ls-files`.split("\n")
+    # file_name_obj = StudentCodeInfo.where(student_id: student_id).select('filename').distinct.order('created_at asc')
+    # TODO: order files
+    file_name_obj = StudentCodeInfo.where(student_id: student_id).select('filename').distinct
 
-    file_name_list.each do |file_name|
-      file_name = file_name.encode('UTF-8')
-      json['fileNameList'].push(file_name)
+    if file_name_obj.exists?
+      file_name_obj.each do |obj|
+        file_name = obj.filename.encode('UTF-8')
+        json['fileNameList'].push(file_name)
 
-      next unless file_name.downcase.end_with?('png', 'jpeg', 'jpg', 'gif')
+        next unless file_name.downcase.end_with?('png', 'jpeg', 'jpg', 'gif')
 
-      image_dir_path = "#{Rails.root}/public/images/#{student_id}"
-      Dir.mkdir(image_dir_path) unless Dir.exist?(image_dir_path)
-      file_name_base = File.basename(file_name)
-      unless File.exist?("#{image_dir_path}/#{file_name_base}")
-        `git -C ~/git/#{student_id} show "master:#{file_name}" > #{image_dir_path}/#{file_name_base}`
-  end
+        image_dir_path = "#{Rails.root}/public/images/#{student_id}"
+        Dir.mkdir(image_dir_path) unless Dir.exist?(image_dir_path)
+        file_name_base = File.basename(file_name)
+        unless File.exist?("#{image_dir_path}/#{file_name_base}")
+          `git -C ~/git/#{student_id} show "master:#{file_name}" > #{image_dir_path}/#{file_name_base}`
+        end
+      end
     end
 
     render json: json
@@ -72,46 +64,70 @@ class StudentViewController < ApplicationController
   def commit_log
     student_id = params['student_id']
     json = []
-    commit_time_array = `git -C ~/git/#{student_id} log --oneline --pretty=format:'%cd' --date=format:'%Y/%m/%d %H:%M:%S'`.split("\n")
+    # commit_time_array = `git -C ~/git/#{student_id} log --oneline --pretty=format:'%cd' --date=format:'%Y/%m/%d %H:%M:%S'`.split("\n")
 
-    commit_last_index = commit_time_array.length - 1
+    commit_log_array = StudentCodeInfo.where(student_id: student_id).select(:created_at, :filename).order('created_at desc')
 
-    commit_log_info = `git -C ~/git/#{student_id} log --name-status`
-    commit_log_info_lines = `git -C ~/git/#{student_id} log --name-status | wc -l`.strip.to_i
-
-    commit_index = -1
-    commit_log = {}
-
-    commit_log_info.each_line.with_index do |line, index|
-      linenum = index + 1
-
-      if line.index('commit') == 0
-        if commit_log != {}
-          json.push(commit_log)
-          commit_log = {}
-        end
-        commit_index += 1
-        commit_log['commitTime'] = commit_time_array[commit_index]
-        commit_log['commitFile'] = []
-      end
-
-      unless (line.index("A\t") == 0) || (line.index("M\t") == 0) || (line.index("D\t") == 0)
-        next
-      end
-
-      file_info = line.split("\t")
-      commit_file = {
-        fileName: file_info[1].strip,
-        fileStatus: file_info[0]
-      }
-
-      commit_log['commitFile'].push(commit_file)
-
-      if commit_index == commit_last_index && linenum == commit_log_info_lines
+    if commit_log_array.exists?
+      commit_log_array.each do |obj|
+        commit_log = {
+          commitTime: '',
+          commitFile: []
+        }
+        commit_log['commitTime'] = obj['created_at'].strftime('%Y/%m/%d %H:%M:%S')
+        file_info = { fileName: '', fileStatus: '' }
+        file_info['fileName'] = obj['filename']
+        commit_log[:commitFile].push(file_info)
         json.push(commit_log)
-        commit_log = {}
       end
     end
+
+    # json = {
+    #   commitTime: "string"
+    #   commitFile: [
+    #     filename: "string",
+    #     fileStatus: "M"
+    #   ]
+    # }
+
+    # commit_last_index = commit_time_array.length - 1
+    #
+    # commit_log_info = `git -C ~/git/#{student_id} log --name-status`
+    # commit_log_info_lines = `git -C ~/git/#{student_id} log --name-status | wc -l`.strip.to_i
+    #
+    # commit_index = -1
+    # commit_log = {}
+    #
+    # commit_log_info.each_line.with_index do |line, index|
+    #   linenum = index + 1
+    #
+    #   if line.index('commit') == 0
+    #     if commit_log != {}
+    #       json.push(commit_log)
+    #       commit_log = {}
+    #     end
+    #     commit_index += 1
+    #     commit_log['commitTime'] = commit_time_array[commit_index]
+    #     commit_log['commitFile'] = []
+    #   end
+    #
+    #   unless (line.index("A\t") == 0) || (line.index("M\t") == 0) || (line.index("D\t") == 0)
+    #     next
+    #   end
+    #
+    #   file_info = line.split("\t")
+    #   commit_file = {
+    #     fileName: file_info[1].strip,
+    #     fileStatus: file_info[0]
+    #   }
+    #
+    #   commit_log['commitFile'].push(commit_file)
+    #
+    #   if commit_index == commit_last_index && linenum == commit_log_info_lines
+    #     json.push(commit_log)
+    #     commit_log = {}
+    #   end
+    # end
 
     render json: json
   end
@@ -120,77 +136,80 @@ class StudentViewController < ApplicationController
     student_id = params['student_id']
     current_commit_index = params['current_commit_index']
 
-    commit_total_num = `git -C ~/git/#{student_id} log --oneline | wc -l`.strip
-    head_hat_num = commit_total_num.to_i - current_commit_index.to_i
-    head = 'HEAD'
-    head_hat_num.times do
-      head += '^'
-    end
-    # TODO: set prevHead properly
-    prevHead = "#{head}^"
+    api_result = []
 
-    filename_array = `git -C ~/git/#{student_id} show --name-only #{head} | sed -n 1,6\!p`.split("\n")
+    commit_total_num = StudentCodeInfo.where(student_id: student_id).count
+    offset = current_commit_index.to_i - 1
 
-    commit_time = `git -C ~/git/#{student_id} show #{head} --pretty=format:'%cd' --date=format:'%Y/%m/%d %H:%M:%S' | head -1`.strip
+    query = <<-EOF
+      select 
+        created_at
+        , filename
+        , code
+        , lag(code) over(partition by filename) as prev_code
+      from student_code_infos 
+      where student_id = :student_id
+      order by created_at asc
+      offset :offset
+      limit 1
+    EOF
+    code_array = StudentCodeInfo.find_by_sql([query, { student_id: student_id, offset: offset }])
 
-    code_string_array = []
-    code_diff_array = []
+    unless code_array.empty?
+      code_array.each do |code_info|
+        json = {}
+        json['fileName'] = code_info['fileName']
+        json['commitTime'] = code_info['created_at'].strftime('%Y/%m/%d %H:%M:%S')
+        json['codeString'] = code_info['code']
 
-    filename_array.each do |filename|
-      next unless filename.end_with?('html', 'css', 'js')
+        current_code = code_info['code']
+        previous_code = code_info['prev_code']
+        command = "diff <(echo #{current_code}) <(echo #{previous_code})"
+        code_diff = `command`
 
-      code_string = `git -C ~/git/#{student_id} show #{head}:#{filename}`.strip
-      code_string_array.push(code_string)
-      code_diff = `git -C ~/git/#{student_id} diff #{prevHead}:#{filename} #{head}:#{filename}`.strip
-      code_diff_array.push(code_diff)
-    end
-
-    code_status_array = []
-    code_string_array.each do |_code|
-      # TODO: check the code with linter
-      code_status_array.push('unknown')
-    end
-
-    json = []
-
-    filename_array.each_with_index do |filename, i|
-      next unless filename.end_with?('html', 'css', 'js')
-
-      code_info = {
-        fileName: filename,
-        commitTime: commit_time,
-        codeString: code_string_array[i],
-        codeDiff: code_diff_array[i],
-        codeStatus: code_status_array[i]
-      }
-      json.push(code_info)
+        json['codeDiff'] = code_diff
+        json['codeStatus'] = 'unknown'
+        api_result.push(json)
+      end
     end
 
-    render json: json
+    render json: api_result
   end
 
   def code_string
     student_id = params['student_id']
     current_commit_index = params['current_commit_index']
 
-    commit_total_num = `git -C ~/git/#{student_id} log --oneline | wc -l`.strip
-    head_hat_num = commit_total_num.to_i - current_commit_index.to_i
+    commit_total_num = StudentCodeInfo.where(student_id: student_id).count
+    offset = current_commit_index.to_i - 1
+    # head_hat_num = commit_total_num.to_i - current_commit_index.to_i
 
-    head = 'HEAD'
-    head_hat_num.times do
-      head += '^'
-    end
+    # head = 'HEAD'
+    # head_hat_num.times do
+    #   head += '^'
+    # end
 
-    filename_array = `git -C ~/git/#{student_id} show --name-only #{head} | sed -n 1,6\!p`.split("\n")
+    # filename_array = `git -C ~/git/#{student_id} show --name-only #{head} | sed -n 1,6\!p`.split("\n")
     code_string_array = []
-    filename_array.each do |filename|
-      next unless filename.end_with?('html', 'css', 'js')
 
-      code_string = `git -C ~/git/#{student_id} show "#{head}:#{filename}"`.strip
+    query = <<-EOF
+      select 
+        filename
+        , code
+      from student_code_infos 
+      where student_id = :student_id
+      order by created_at asc
+      offset :offset
+      limit 1
+    EOF
+    file_array = StudentCodeInfo.find_by_sql([query, { student_id: student_id, offset: offset }])
+    file_array.each do |file|
+      next unless file['filename'].end_with?('html', 'css', 'js')
+
       parsed_code_string = ''
 
-      if filename.end_with?('html')
-        parsed_code_string = Nokogiri::HTML.parse(code_string)
+      if file['filename'].end_with?('html')
+        parsed_code_string = Nokogiri::HTML.parse(file['code'])
         parsed_code_string.css('img').each do |e|
           image_filename = e[:src]
           unless image_filename.start_with?('http')
@@ -198,7 +217,6 @@ class StudentViewController < ApplicationController
             e[:src] = image_path
           end
         end
-
         parsed_code_string.css('table').each do |e|
           next unless e[:background].present?
 
