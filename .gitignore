@@ -32,3 +32,5 @@ vendor/
 .env*
 public/images/*
 *swp
+
+config/credentials.yml.enc
