@@ -74,7 +74,7 @@ class StudentViewController < ApplicationController
           commitTime: '',
           commitFile: []
         }
-        commit_log['commitTime'] = obj['saved_at'].strftime('%Y/%m/%d %H:%M:%S')
+        commit_log['commitTime'] = obj['saved_at'].nil? ? 'null' : obj['saved_at'].strftime('%Y/%m/%d %H:%M:%S')
         file_info = { fileName: '', fileStatus: '' }
         file_info['fileName'] = obj['filename']
         commit_log[:commitFile].push(file_info)
@@ -159,7 +159,7 @@ class StudentViewController < ApplicationController
       code_array.each do |code_info|
         json = {}
         json['fileName'] = code_info['fileName']
-        json['commitTime'] = code_info['saved_at'].strftime('%Y/%m/%d %H:%M:%S')
+        json['commitTime'] = code_info['saved_at'].nil? ? 'null' : code_info['saved_at'].strftime('%Y/%m/%d %H:%M:%S')
         json['codeString'] = code_info['code']
 
         current_code = code_info['code']
