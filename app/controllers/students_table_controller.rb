@@ -32,7 +32,7 @@ class StudentsTableController < ApplicationController
     student_infos = StudentCodeInfo.find_by_sql(query)
     student_infos.each do |student_info|
       json = {}
-      json['studentID'] = student_info['student_id']
+      json['studentID'] = student_info['student_id'].nil? ? "null" : student_info['student_id']
 
       json['workingFiles'] = []
       json_file = {}
