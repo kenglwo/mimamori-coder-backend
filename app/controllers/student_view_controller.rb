@@ -202,38 +202,70 @@ class StudentViewController < ApplicationController
       offset :offset
       limit 1
     EOF
+
     file_array = StudentCodeInfo.find_by_sql([query, { student_id: student_id, offset: offset }])
+
     file_array.each do |file|
       next unless file['filename'].end_with?('html', 'css', 'js')
 
       parsed_code_string = ''
 
       if file['filename'].end_with?('html')
-        parsed_code_string = Nokogiri::HTML.parse(file['code'])
-        parsed_code_string.css('img').each do |e|
-          image_filename = e[:src]
-          unless image_filename.start_with?('http')
-            image_path = "#{ENV['APP_URL']}/images/#{student_id}/#{image_filename}"
-            e[:src] = image_path
-          end
-        end
-        parsed_code_string.css('table').each do |e|
-          next unless e[:background].present?
+        # parsed_code_string = Nokogiri::HTML.parse(file['code'])
+        # parsed_code_string.css('img').each do |e|
+        #   image_filename = e[:src]
+        #   unless image_filename.start_with?('http')
+        #     image_path = "#{ENV['APP_URL']}/images/#{student_id}/#{image_filename}"
+        #     e[:src] = image_path
+        #   end
+        # end
+        # parsed_code_string.css('table').each do |e|
+        #   next unless e[:background].present?
+        #
+        #   image_filename = e[:background]
+        #   unless image_filename.start_with?('http')
+        #     image_path = "#{ENV['APP_URL']}/images/#{student_id}/#{image_filename}"
+        #     e[:background] = image_path
+        #   end
+        # end
 
-          image_filename = e[:background]
-          unless image_filename.start_with?('http')
-            image_path = "#{ENV['APP_URL']}/images/#{student_id}/#{image_filename}"
-            e[:background] = image_path
-          end
-        end
+        # json = {
+        #   codeString: parsed_code_string.to_html
+        # }
 
         json = {
-          codeString: parsed_code_string.to_html
+          codeString: file['code']
+        }
+        code_string_array.push(json)
+      elsif file['filename'].end_with?('js')
+        code = <<-EOS
+          <!DOCTYPE html>
+          <html>
+            <head>
+              <meta name="viewport" width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0>
+              <meta charset="UTF-8">
+              <style> body {padding: 0; margin: 0;} canvas { display: block  }</style>
+              <script src="https://cdn.jsdelivr.net/npm/p5@1.1.9/lib/p5.js"></script>
+              <script>
+                js_code
+              </script>
+            </head>
+          <body>
+          </body>
+          </html>
+        EOS
+
+        code = code.sub(/js_code/, file['code'])
+        json = {
+          codeString: code
         }
         code_string_array.push(json)
       else
+        # json = {
+        #   codeString: code_string
+        # }
         json = {
-          codeString: code_string
+          codeString: file['code']
         }
         code_string_array.push(json)
       end
