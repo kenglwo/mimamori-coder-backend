@@ -6,8 +6,6 @@ class StudentCodeController < ApplicationController
 
     # code_data_array = JSON.parse(params[:student_code])
     code_data_array = JSON.parse(request.body.read)
-    logger.debug "==============================="
-    logger.debug code_data_array
 
     code_data_array.each do |code_data|
       student_id = code_data['student_id']
