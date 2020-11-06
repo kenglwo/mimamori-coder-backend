@@ -18,9 +18,9 @@ class StudentViewController < ApplicationController
           student_id
           , filename
           , code
-          , created_at
-          , ROW_NUMBER() over (partition by student_id order by created_at asc) as commits
-          , ROW_NUMBER() over (partition by student_id order by created_at desc) as num 
+          , saved_at
+          , ROW_NUMBER() over (partition by student_id order by saved_at asc) as commits
+          , ROW_NUMBER() over (partition by student_id order by saved_at desc) as num 
         from student_code_infos 
         order by student_id, commits desc
       ) as tmp 
@@ -38,7 +38,7 @@ class StudentViewController < ApplicationController
     student_id = params['student_id']
     json = {}
     json['fileNameList'] = []
-    # file_name_obj = StudentCodeInfo.where(student_id: student_id).select('filename').distinct.order('created_at asc')
+    # file_name_obj = StudentCodeInfo.where(student_id: student_id).select('filename').distinct.order('saved_at asc')
     # TODO: order files
     file_name_obj = StudentCodeInfo.where(student_id: student_id).select('filename').distinct
 
@@ -66,7 +66,7 @@ class StudentViewController < ApplicationController
     json = []
     # commit_time_array = `git -C ~/git/#{student_id} log --oneline --pretty=format:'%cd' --date=format:'%Y/%m/%d %H:%M:%S'`.split("\n")
 
-    commit_log_array = StudentCodeInfo.where(student_id: student_id).select(:created_at, :filename).order('created_at desc')
+    commit_log_array = StudentCodeInfo.where(student_id: student_id).select(:saved_at, :filename).order('saved_at desc')
 
     if commit_log_array.exists?
       commit_log_array.each do |obj|
@@ -74,7 +74,7 @@ class StudentViewController < ApplicationController
           commitTime: '',
           commitFile: []
         }
-        commit_log['commitTime'] = obj['created_at'].strftime('%Y/%m/%d %H:%M:%S')
+        commit_log['commitTime'] = obj['saved_at'].strftime('%Y/%m/%d %H:%M:%S')
         file_info = { fileName: '', fileStatus: '' }
         file_info['fileName'] = obj['filename']
         commit_log[:commitFile].push(file_info)
@@ -143,13 +143,13 @@ class StudentViewController < ApplicationController
 
     query = <<-EOF
       select 
-        created_at
+        saved_at
         , filename
         , code
         , lag(code) over(partition by filename) as prev_code
       from student_code_infos 
       where student_id = :student_id
-      order by created_at asc
+      order by saved_at asc
       offset :offset
       limit 1
     EOF
@@ -159,7 +159,7 @@ class StudentViewController < ApplicationController
       code_array.each do |code_info|
         json = {}
         json['fileName'] = code_info['fileName']
-        json['commitTime'] = code_info['created_at'].strftime('%Y/%m/%d %H:%M:%S')
+        json['commitTime'] = code_info['saved_at'].strftime('%Y/%m/%d %H:%M:%S')
         json['codeString'] = code_info['code']
 
         current_code = code_info['code']
@@ -198,7 +198,7 @@ class StudentViewController < ApplicationController
         , code
       from student_code_infos 
       where student_id = :student_id
-      order by created_at asc
+      order by saved_at asc
       offset :offset
       limit 1
     EOF

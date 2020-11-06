@@ -1,18 +1,27 @@
+require 'json'
+
 class StudentCodeController < ApplicationController
   def save
     api_result = ""
 
-    code_data = params[:student_code]
-    student_id = code_data['student_id']
-    filename = code_data['filename']
-    code = code_data['code']
+    # code_data_array = JSON.parse(params[:student_code])
+    code_data_array = JSON.parse(request.body.read)
+    logger.debug "==============================="
+    logger.debug code_data_array
 
-    begin
-      StudentCodeInfo.create(student_code_params)
-      api_result = "Success"
-    rescue => e
-      logger.debug e
-      api_result = e.message
+    code_data_array.each do |code_data|
+      student_id = code_data['student_id']
+      filename = code_data['filename']
+      code = code_data['code']
+      saved_at = code_data['saved_at']
+
+      begin
+        StudentCodeInfo.create(student_id: student_id, filename: filename, code: code, saved_at: saved_at)
+        api_result = "Success"
+      rescue => e
+        logger.debug e
+        api_result = e.message
+      end
     end
 
     render plain: api_result
