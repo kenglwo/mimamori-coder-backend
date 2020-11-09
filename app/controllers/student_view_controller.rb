@@ -181,6 +181,8 @@ class StudentViewController < ApplicationController
     student_id = params['student_id']
     current_commit_index = params['current_commit_index']
 
+    logger.debug '#########################'
+    logger.debug student_id
     commit_total_num = StudentCodeInfo.where(student_id: student_id).count
     offset = current_commit_index.to_i - 1
     offset = 0 if offset < 0
@@ -236,13 +238,32 @@ class StudentViewController < ApplicationController
           codeString: parsed_code_string.to_html
         }
         code_string_array.push(json)
-      else
+      elsif file['filename'].end_with?('js')
+        template = <<-EOF
+          <!DOCTYPE html>
+          <html>
+            <head>
+              <meta name="viewport" width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0>
+              <meta charset="UTF-8">
+              <style> body {padding: 0; margin: 0;} canvas { display: block  }</style>
+              <script src="https://cdn.jsdelivr.net/npm/p5@1.1.9/lib/p5.js"></script>
+              <script>
+                js_code
+              </script>
+            </head>
+            <body></body>
+          </html>
+        EOF
+
+        code = template.gsub(/js_code/, file['code'])
+
         json = {
           filename: file['filename'],
           createdAt: file['created_at'],
-          codeString: code_string
+          codeString: code
         }
         code_string_array.push(json)
+
       end
     end
 
