@@ -140,6 +140,7 @@ class StudentViewController < ApplicationController
 
     commit_total_num = StudentCodeInfo.where(student_id: student_id).count
     offset = current_commit_index.to_i - 1
+    offset = 0 if offset < 0
 
     query = <<-EOF
       select 
@@ -182,6 +183,7 @@ class StudentViewController < ApplicationController
 
     commit_total_num = StudentCodeInfo.where(student_id: student_id).count
     offset = current_commit_index.to_i - 1
+    offset = 0 if offset < 0
     # head_hat_num = commit_total_num.to_i - current_commit_index.to_i
 
     # head = 'HEAD'
@@ -196,76 +198,49 @@ class StudentViewController < ApplicationController
       select 
         filename
         , code
+        , created_at
       from student_code_infos 
       where student_id = :student_id
       order by saved_at asc
       offset :offset
       limit 1
     EOF
-
     file_array = StudentCodeInfo.find_by_sql([query, { student_id: student_id, offset: offset }])
-
     file_array.each do |file|
       next unless file['filename'].end_with?('html', 'css', 'js')
 
       parsed_code_string = ''
 
       if file['filename'].end_with?('html')
-        # parsed_code_string = Nokogiri::HTML.parse(file['code'])
-        # parsed_code_string.css('img').each do |e|
-        #   image_filename = e[:src]
-        #   unless image_filename.start_with?('http')
-        #     image_path = "#{ENV['APP_URL']}/images/#{student_id}/#{image_filename}"
-        #     e[:src] = image_path
-        #   end
-        # end
-        # parsed_code_string.css('table').each do |e|
-        #   next unless e[:background].present?
-        #
-        #   image_filename = e[:background]
-        #   unless image_filename.start_with?('http')
-        #     image_path = "#{ENV['APP_URL']}/images/#{student_id}/#{image_filename}"
-        #     e[:background] = image_path
-        #   end
-        # end
+        parsed_code_string = Nokogiri::HTML.parse(file['code'])
+        parsed_code_string.css('img').each do |e|
+          image_filename = e[:src]
+          unless image_filename.start_with?('http')
+            image_path = "#{ENV['APP_URL']}/images/#{student_id}/#{image_filename}"
+            e[:src] = image_path
+          end
+        end
+        parsed_code_string.css('table').each do |e|
+          next unless e[:background].present?
 
-        # json = {
-        #   codeString: parsed_code_string.to_html
-        # }
+          image_filename = e[:background]
+          unless image_filename.start_with?('http')
+            image_path = "#{ENV['APP_URL']}/images/#{student_id}/#{image_filename}"
+            e[:background] = image_path
+          end
+        end
 
         json = {
-          codeString: file['code']
-        }
-        code_string_array.push(json)
-      elsif file['filename'].end_with?('js')
-        code = <<-EOS
-          <!DOCTYPE html>
-          <html>
-            <head>
-              <meta name="viewport" width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0>
-              <meta charset="UTF-8">
-              <style> body {padding: 0; margin: 0;} canvas { display: block  }</style>
-              <script src="https://cdn.jsdelivr.net/npm/p5@1.1.9/lib/p5.js"></script>
-              <script>
-                js_code
-              </script>
-            </head>
-          <body>
-          </body>
-          </html>
-        EOS
-
-        code = code.sub(/js_code/, file['code'])
-        json = {
-          codeString: code
+          filename: file['filename'],
+          createdAt: file['created_at'],
+          codeString: parsed_code_string.to_html
         }
         code_string_array.push(json)
       else
-        # json = {
-        #   codeString: code_string
-        # }
         json = {
-          codeString: file['code']
+          filename: file['filename'],
+          createdAt: file['created_at'],
+          codeString: code_string
         }
         code_string_array.push(json)
       end
