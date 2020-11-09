@@ -14,4 +14,7 @@ Rails.application.routes.draw do
   get 'api/student_view/student_id_list', to: 'student_view#student_id_list'
 
   post 'api/auth_supervisor', to: 'auth_supervisor#auth'
+
+  post 'api/comment_save', to: 'manage_comment#save'
+  get 'api/comment_fetch', to: 'manage_comment#fetch'
 end
