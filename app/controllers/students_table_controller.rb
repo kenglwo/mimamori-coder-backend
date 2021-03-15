@@ -7,6 +7,7 @@ class StudentsTableController < ApplicationController
 
   def index
     all_student_table_items = []
+    class_code = params['class_code']
 
     query = <<-EOF
         select 
@@ -24,12 +25,13 @@ class StudentsTableController < ApplicationController
             , ROW_NUMBER() over (partition by student_id order by created_at asc) as commits
             , ROW_NUMBER() over (partition by student_id order by created_at desc) as num 
           from student_code_infos 
+          where class_code = :class_code
           order by student_id, commits desc
         ) as tmp 
         where num = 1;
     EOF
 
-    student_infos = StudentCodeInfo.find_by_sql(query)
+    student_infos = StudentCodeInfo.find_by_sql([query, {:class_code => class_code}])
     student_infos.each do |student_info|
       json = {}
       json['studentID'] = student_info['student_id'].nil? ? "null" : student_info['student_id']
