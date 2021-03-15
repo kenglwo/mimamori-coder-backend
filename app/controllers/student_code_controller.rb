@@ -4,7 +4,6 @@ class StudentCodeController < ApplicationController
   def save
     api_result = ""
 
-    # code_data_array = JSON.parse(params[:student_code])
     code_data_array = JSON.parse(request.body.read)
 
     code_data_array.each do |code_data|
@@ -12,9 +11,10 @@ class StudentCodeController < ApplicationController
       filename = code_data['filename']
       code = code_data['code']
       saved_at = code_data['saved_at']
+      class_code = code_data['class_code']
 
       begin
-        StudentCodeInfo.create(student_id: student_id, filename: filename, code: code, saved_at: saved_at)
+        StudentCodeInfo.create(student_id: student_id, filename: filename, code: code, saved_at: saved_at, class_code: class_code)
         api_result = "Success"
       rescue => e
         logger.debug e
