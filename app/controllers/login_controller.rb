@@ -3,9 +3,10 @@ class LoginController < ApplicationController
     msg = ""
 
     auth_info = params[:login]
-    student_id = auth_info["studentId"]
-    class_code = auth_info["classCode"]
-    class_password = auth_info["classPassword"]
+
+    student_id = auth_info["student_id"]
+    class_code = auth_info["class_code"]
+    class_password = auth_info["class_password"]
 
     class_info = ClassInfo.find_by(class_code: class_code)
 

@@ -7,6 +7,7 @@ class StudentCodeController < ApplicationController
     code_data_array = JSON.parse(request.body.read)
 
     code_data_array.each do |code_data|
+      
       student_id = code_data['student_id']
       filename = code_data['filename']
       code = code_data['code']
@@ -23,7 +24,13 @@ class StudentCodeController < ApplicationController
     end
 
     render plain: api_result
+  end
 
+  def save_image
+    api_result = "";
+
+    image = request.body.read
+    File.open("")
   end
 
   private

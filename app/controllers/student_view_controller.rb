@@ -50,6 +50,9 @@ class StudentViewController < ApplicationController
         next unless file_name.downcase.end_with?('png', 'jpeg', 'jpg', 'gif')
 
         image_dir_path = "#{Rails.root}/public/images/#{student_id}"
+        logger.debug "###################################"
+        logger.debug image_dir_path
+
         Dir.mkdir(image_dir_path) unless Dir.exist?(image_dir_path)
         file_name_base = File.basename(file_name)
         unless File.exist?("#{image_dir_path}/#{file_name_base}")
@@ -74,7 +77,7 @@ class StudentViewController < ApplicationController
           commitTime: '',
           commitFile: []
         }
-        commit_log['commitTime'] = obj['saved_at'].nil? ? 'null' : obj['saved_at'].strftime('%Y/%m/%d %H:%M:%S')
+        commit_log['commitTime'] = obj['saved_at'].nil? ? 'null' : obj['created_at'].strftime('%Y/%m/%d %H:%M:%S')
         file_info = { fileName: '', fileStatus: '' }
         file_info['fileName'] = obj['filename']
         commit_log[:commitFile].push(file_info)
@@ -181,8 +184,6 @@ class StudentViewController < ApplicationController
     student_id = params['student_id']
     current_commit_index = params['current_commit_index']
 
-    logger.debug '#########################'
-    logger.debug student_id
     commit_total_num = StudentCodeInfo.where(student_id: student_id).count
     offset = current_commit_index.to_i - 1
     offset = 0 if offset < 0
